@@ -1,1 +1,43 @@
+.nextcloud-folder-list {
+    list-style-type: none;
+    padding-left: 20px;
+}
 
+.nextcloud-folder-item {
+    margin: 5px 0;
+    cursor: pointer;
+}
+
+.nextcloud-folder-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
+
+.folder-icon {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%23000" d="M1.5 2h5l1 2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"/></svg>');
+}
+
+.file-icon {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%23000" d="M4 1v14h8v-14h-8zm1 1h6v12h-6v-12z"/></svg>');
+}
+
+.nextcloud-folder-content {
+    vertical-align: middle;
+}
+
+.nextcloud-subfolder-content {
+    display: none;
+}
+
+.nextcloud-folder-item.open > .nextcloud-subfolder-content {
+    display: block;
+}
+
+.nextcloud-folder-item.open > .folder-icon {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%23000" d="M1.5 2h5l1 2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"/></svg>');
+}
