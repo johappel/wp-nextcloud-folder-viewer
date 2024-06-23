@@ -2,7 +2,7 @@
 /*
 Plugin Name: Nextcloud Folder Viewer
 Description: Zeigt Ordnerstrukturen von Nextcloud an
-Version: 1.0
+Version: 0.1
 Author: Joachim Happel
 */
 
