@@ -1,13 +1,19 @@
 .nextcloud-folder-list {
     list-style-type: none;
     padding-left: 20px;
+    margin: 0;
 }
 
 .nextcloud-folder-item {
     margin: 5px 0;
     cursor: pointer;
+    line-height: 20px;
 }
-
+.root-folder .nextcloud-folder-handle{
+    margin-left: -15px;
+    cursor: text;
+    font-weight: bold;
+}
 .nextcloud-folder-icon {
     display: inline-block;
     width: 16px;
@@ -23,7 +29,7 @@
 }
 
 .file-icon {
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%23000" d="M4 1v14h8v-14h-8zm1 1h6v12h-6v-12z"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>');
 }
 
 .nextcloud-folder-content {
@@ -34,10 +40,27 @@
     display: none;
 }
 
-.nextcloud-folder-item.open > .nextcloud-subfolder-content {
-    display: block;
+.nextcloud-folder-item.folder > .nextcloud-folder-content {
+    font-weight: bold;
 }
 
-.nextcloud-folder-item.open > .folder-icon {
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%23000" d="M1.5 2h5l1 2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"/></svg>');
+.nextcloud-folder-handle.open > .folder-icon {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="None"/><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 12v-3h-4v-4h4V8l5 5-5 5z"/></svg>');
+    height: 20px;
+    width: 20px;
 }
+.nextcloud-folder-item a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.nextcloud-folder-item:not(.root-folder) .nextcloud-folder-handle:hover {
+    color: darkred;
+}
+
+.nextcloud-folder-item.file:hover {
+    text-decoration: underline;
+    color: darkred;
+    background-color: #f0f0f0;
+}
+
