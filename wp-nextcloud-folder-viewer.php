@@ -2,13 +2,15 @@
 /*
 Plugin Name: Nextcloud Folder Viewer
 Description: Zeigt Freigaben von Nextcloud als Ordnerstruktur an und ermöglicht das Anzeigen von Dateien via Shortcode [nextcloud url="https://example.com/nextcloud/f/123456"] oder das Einbetten von Dateien mit [nextcloud_folder url="https://example.com/nextcloud/s/123456" title="readme.md" show="false"].
-Version: 0.1.0
+Version: 0.1.1
 Author: Joachim Happel
 */
 
 if (!defined('ABSPATH')) exit;
 
-require_once __DIR__ . '/vendor/autoload.php';
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+}
 require_once plugin_dir_path(__FILE__) . 'class-nextcloud-file-viewer.php';
 
 class NextcloudFolderViewer {
@@ -299,10 +301,29 @@ class NextcloudFolderViewer {
 add_action('plugins_loaded', array('NextcloudFolderViewer', 'get_instance'));
 
 // Composer install on activation
-register_activation_hook(__FILE__, 'parsedown_composer_activation');
-function parsedown_composer_activation() {
-    // ACHTUNG: Dies könnte Sicherheitsrisiken bergen und auf vielen Hosts nicht funktionieren
-    // besser ist es, die Abhängigkeiten lokal zu installieren und die Dateien hochzuladen
-    // composer install --optimize-autoloader --no-dev
-    exec('composer install --no-dev');
+// Überprüfen Sie einfach, ob die erforderlichen Dateien vorhanden sind
+register_activation_hook(__FILE__, 'check_required_files');
+function check_required_files() {
+    if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
+        deactivate_plugins(plugin_basename(__FILE__));
+        do_action('composer_installation_notice');
+
+    }
+}
+add_action('admin_notices', 'composer_installation_notice');
+function composer_installation_notice() {
+    if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
+        try {
+            // Versuchen, Composer auszuführen
+            exec('composer install --no-dev');
+        } catch (Exception $e) {
+            // Fehlermeldung an den Admin ausgeben
+            echo '<div class="notice notice-warning"><p>';
+            echo '<strong>Plugin deaktiviert!</strong><p>';
+            echo 'Bitte führen Sie auf der Console den Befehl "composer install" im Plugin-Verzeichnis aus, um alle erforderlichen Abhängigkeiten zu installieren.';
+            echo '</p></div>';
+            deactivate_plugins(plugin_basename(__FILE__));
+
+        }
+    }
 }
