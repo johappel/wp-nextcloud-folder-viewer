@@ -2,13 +2,24 @@
 /*
 Plugin Name: Nextcloud Folder Viewer
 Description: Zeigt Ordnerstrukturen von Nextcloud an
-Version: 1.0
+Version: 0.0.1
 Author: Joachim Happel
 */
 
 if (!defined('ABSPATH')) exit;
 
+require_once __DIR__ . '/vendor/autoload.php';
+require_once plugin_dir_path(__FILE__) . 'class-nextcloud-file-viewer.php';
+
+
 add_shortcode('nextcloud_folder', 'nextcloud_folder_shortcode');
+add_action('wp_enqueue_scripts', 'nextcloud_folder_enqueue_scripts');
+
+add_action('wp_ajax_get_nextcloud_folder', 'get_nextcloud_folder');
+add_action('wp_ajax_nopriv_get_nextcloud_folder', 'get_nextcloud_folder');
+add_action('wp_ajax_view_nextcloud_file', 'view_nextcloud_file');
+add_action('wp_ajax_nopriv_view_nextcloud_file', 'view_nextcloud_file');
+add_action('plugins_loaded', 'stream_nextcloud_file');
 
 function nextcloud_folder_enqueue_scripts() {
     wp_enqueue_style('nextcloud-folder-viewer-style', plugin_dir_url(__FILE__) . 'css/nextcloud-folder-viewer.css', array(), '1.0');
@@ -17,32 +28,71 @@ function nextcloud_folder_enqueue_scripts() {
         'ajaxurl' => admin_url('admin-ajax.php')
     ));
 }
-add_action('wp_enqueue_scripts', 'nextcloud_folder_enqueue_scripts');
 
 function nextcloud_folder_shortcode($atts) {
     $atts = shortcode_atts(array(
         'url' => '',
-    ), $atts, 'nextcloud_folder');
+        'file-name' => '',
+        'show' => true,
+    ), $atts, 'nextcloud');
 
-    return '<div id="folder-tree" data-url="' . esc_attr($atts['url']) . '"></div>';
+
+    if (empty($atts['url'])) {
+        return 'Error: Nextcloud URL is required.';
+    }
+
+    $url = $atts['url'];
+    $share_token = basename(parse_url($url, PHP_URL_PATH));
+
+    error_log('Nextcloud URL: ' . $url);
+    error_log('Share Token: ' . $share_token);
+
+    $viewer = new NextcloudFileViewer($url, $share_token);
+    error_log("isSharedFile: ".$viewer->isSharedFile());
+
+    if ($content_type=$viewer->isSharedFile()) {
+        // Es handelt sich um eine Datei, zeige den Download-Link an
+        if($atts['file-name'] != ''){
+            $label= $atts['file-name'];
+        }else{
+            $label= 'Download';
+        }
+        if($atts['show'] == 'true'){
+            return nextcloud_file_embed($content_type,$viewer, $url, $label);
+        }else{
+            return "<a class='button button-primary' href='{$url}/download' target='_blank'>{$label}</a>";
+        }
+
+    } else {
+        error_log('Shared Folder: ' . $url);
+        $crypt_url = encrypt($url);
+
+        // Es handelt sich um einen Ordner, zeige die Ordnerstruktur an
+        $output = '<div id="folder-tree" data-url="' . $crypt_url . '"></div>';
+        wp_enqueue_script('nextcloud-folder-viewer');
+        return $output;
+    }
 }
 
-add_action('wp_ajax_get_nextcloud_folder', 'get_nextcloud_folder');
-add_action('wp_ajax_nopriv_get_nextcloud_folder', 'get_nextcloud_folder');
-add_action('wp_ajax_view_nextcloud_file', 'view_nextcloud_file');
-add_action('wp_ajax_nopriv_view_nextcloud_file', 'view_nextcloud_file');
+function stream_nextcloud_file()
+{
+    if (isset($_GET['action']) && $_GET['action'] == 'stream_nextcloud_file' && isset($_GET['token']) && $_GET['token'] != '') {
+        view_nextcloud_file($_GET['token']);
+        //var_dump($_GET['action'],$_GET['token']);
+        die();
+    }
+}
+function view_nextcloud_file($token) {
 
-function view_nextcloud_file() {
-    if (!isset($_GET['token'])) {
-        wp_die('Missing token');
+    if (!isset($_GET['token']) && !$token) {
+        return;
     }
 
     $data = get_file_view_data($_GET['token']);
+
     if (!$data) {
         wp_die('Invalid or expired token');
     }
-
-    require_once plugin_dir_path(__FILE__) . 'class-nextcloud-file-viewer.php';
 
     $url = $data['url'];
     $path = $data['path'];
@@ -52,11 +102,27 @@ function view_nextcloud_file() {
     $viewer = new NextcloudFileViewer($url, $share_token);
     $viewer->viewFile($path);
 }
-function generate_file_view_token($url, $path) {
+function generate_file_view_token($url, $path='') {
     $token = wp_generate_password(32, false);
-    set_transient('nextcloud_view_' . $token, array('url' => $url, 'path' => $path), 5 * MINUTE_IN_SECONDS);
+    set_transient('nextcloud_view_' . $token, array('url' => $url, 'path' => $path), 60 * MINUTE_IN_SECONDS);
     return $token;
 }
+function encrypt($url){
+    $token = wp_generate_password(32, false);
+    $share_token = basename(parse_url($url, PHP_URL_PATH));
+    $host = parse_url($url, PHP_URL_HOST);
+    $crypt_url = str_replace($host, $share_token.'.org', $url);
+    $crypt_url = str_replace($share_token, $token, $crypt_url);
+    set_transient('nextcloud_crypt_' . $token, $url, 60 * MINUTE_IN_SECONDS);
+    return $crypt_url;
+}
+function decrypt($url){
+    $token = basename(parse_url($url, PHP_URL_PATH));
+    $url = get_transient('nextcloud_crypt_' . $token);
+    return $url;
+
+}
+
 
 function get_file_view_data($token) {
     return get_transient('nextcloud_view_' . $token);
@@ -64,7 +130,8 @@ function get_file_view_data($token) {
 
 function get_nextcloud_folder(){
 
-    $url = $_POST['url'];
+
+    $url = decrypt($_POST['url']);
     $path = isset($_POST['path']) ? $_POST['path'] : '';
     error_log('get_nextcloud_folder URL: ' . $url. ' Path: ' . $path);
     if (!$url) {
@@ -159,4 +226,67 @@ function get_nextcloud_folder(){
             wp_die();
         }
     }
+
+
+}
+function nextcloud_file_embed($content_type,$viewer, $shared_url, $file_name="")
+{
+
+    $crypt_url = encrypt($shared_url);
+
+    $prefix = '';
+    $suffix = '';
+    if($file_name !== ''){
+        $prefix = '<div id="folder-tree" data-url="'.$crypt_url.'" class="nextcloud-file-embed"><span class="file-name">'.$file_name.'</span>';
+        $suffix = '<div class="nextcloud-download-link"><a href="'.$shared_url.'/download">Download</a></div>';
+    }
+
+    $view_token = generate_file_view_token($shared_url);
+    $url = home_url()."?action=stream_nextcloud_file&token={$view_token}";
+
+
+    $img = array(
+        'image/jpeg', 'image/png', 'image/gif', 'image/svg+xml',
+
+    );
+    $pdf = array(
+        'application/pdf',
+    );
+    $video = array(
+        'video/mp4', 'video/webm',
+    );
+    $audio = array(
+        'audio/mpeg', 'audio/ogg',
+    );
+    $text = array(
+        'text/plain', 'text/markdown',
+    );
+    $texthtml = array(
+        'text/html'
+    );
+
+    $html_file_embed = '';
+    if (in_array($content_type, $img)) {
+        $html_file_embed = '<img src="' . $url . '" alt="Image" />';
+    } elseif (in_array($content_type, $pdf)) {
+        $html_file_embed =  '<embed src="' . $url . '" type="application/pdf" width="100%" height="600px" />';
+    } elseif (in_array($content_type, $video)) {
+        $html_file_embed =  '<video width="100%" height="auto" controls>
+            <source src="' . $url . '" type="' . $content_type . '">
+            Your browser does not support the video tag.
+            </video>';
+    } elseif (in_array($content_type, $audio)) {
+        $html_file_embed =  '<audio controls>
+            <source src="' . $url . '" type="' . $content_type . '">
+            Your browser does not support the audio element.
+            </audio>';
+    } elseif (in_array($content_type, $text)) {
+        $html_file_embed =  '<div class="embed-markdown">'.$viewer->viewFile('').'</div>';
+    } elseif (in_array($content_type, $texthtml)) {
+        $html_file_embed =  '<iframe src="' . $url . '" width="100%" height="600px"></iframe>';
+    }
+    if($html_file_embed !== ''){
+        return $prefix.$html_file_embed.$suffix;
+    }
+    return '';
 }

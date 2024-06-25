@@ -98,10 +98,28 @@ jQuery(document).ready(function($) {
     async function initTreeView() {
         try {
             console.log('Initializing tree view');
-            const rootItems = await getFolderStructure('');
-            console.log('Root items:', rootItems);
-            container.empty();
-            createTreeView(container, rootItems, '');
+            const response = await $.ajax({
+                url: nextcloudAjax.ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'get_nextcloud_folder',
+                    url: url,
+                    path: '',
+                }
+            });
+
+            if (response.success) {
+                console.info('data',response.data);
+                if (response.data.length ===2 && !response.data[1].isFolder) {
+                    //container.html(response.data);
+                } else {
+                    // Es ist eine Ordnerstruktur
+                    container.empty();
+                    createTreeView(container, response.data, '');
+                }
+            } else {
+                throw new Error(response.data);
+            }
         } catch (error) {
             console.error('Error initializing tree view:', error);
             container.html('<p>Error loading folder structure</p>');
