@@ -64,3 +64,15 @@
     background-color: #f0f0f0;
 }
 
+.embed-nextcloud-av {
+    height: auto!important;
+}
+
+.embed-nextcloud-pdf {
+    height: revert-layer!important;
+}
+.nextcloud-file-embed .file-name {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
