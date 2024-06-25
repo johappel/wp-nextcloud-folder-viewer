@@ -2,7 +2,7 @@
 /*
 Plugin Name: Nextcloud Folder Viewer
 Description: Zeigt Freigaben von Nextcloud als Ordnerstruktur an und ermöglicht das Anzeigen von Dateien via Shortcode [nextcloud url="https://example.com/nextcloud/f/123456"] oder das Einbetten von Dateien mit [nextcloud_folder url="https://example.com/nextcloud/s/123456" title="readme.md" show="false"].
-Version: 0.0.1
+Version: 0.1.0
 Author: Joachim Happel
 */
 
@@ -72,10 +72,13 @@ class NextcloudFolderViewer {
     }
 
     private function handle_shared_folder($url) {
+
+        $unique_id = 'nextcloud-folder-' . wp_generate_password(8, false);
         $crypt_url = $this->encrypt($url);
-        $output = '<div id="folder-tree" data-url="' . $crypt_url . '"></div>';
+        $output = '<div id="' . $unique_id . '" class="nextcloud-folder-tree" data-url="' . $crypt_url . '"></div>';
         wp_enqueue_script('nextcloud-folder-viewer');
         return $output;
+
     }
 
     public function stream_nextcloud_file() {
@@ -229,14 +232,16 @@ class NextcloudFolderViewer {
     }
 
     private function nextcloud_file_embed($content_type, $viewer, $shared_url, $file_name="") {
+
+
         $crypt_url = $this->encrypt($shared_url);
+        $unique_id = 'nextcloud-folder-' . wp_generate_password(8, false);
 
-
-        $prefix = '';
-        $suffix = '';
+        $prefix = '<div id="' . $unique_id . '" data-url="'.$crypt_url.'" class="nextcloud-folder-tree">';
+        $suffix = '</div>';
         if($file_name !== ''){
-            $prefix = '<div id="folder-tree" data-url="'.$crypt_url.'" class="nextcloud-file-embed"><span class="file-name">'.$file_name.'</span>';
-            $suffix = '<div class="nextcloud-download-link"><a href="'.$shared_url.'/download">Download</a></div>';
+            $prefix .= '<div class="nextcloud-file-embed"><span class="file-name">'.$file_name.'</span>';
+            $suffix = '<div class="nextcloud-download-link"><a href="'.$shared_url.'/download">Download</a></div>'.$suffix;
         }
 
         $view_token = $this->generate_file_view_token($shared_url);
@@ -292,3 +297,12 @@ class NextcloudFolderViewer {
 
 // Initialize the plugin
 add_action('plugins_loaded', array('NextcloudFolderViewer', 'get_instance'));
+
+// Composer install on activation
+register_activation_hook(__FILE__, 'parsedown_composer_activation');
+function parsedown_composer_activation() {
+    // ACHTUNG: Dies könnte Sicherheitsrisiken bergen und auf vielen Hosts nicht funktionieren
+    // besser ist es, die Abhängigkeiten lokal zu installieren und die Dateien hochzuladen
+    // composer install --optimize-autoloader --no-dev
+    exec('composer install --no-dev');
+}
