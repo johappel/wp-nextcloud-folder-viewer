@@ -22,7 +22,7 @@ auf der Console im Ordner `wp-content/plugins/nextcloud-folder-viewer` ausführe
 
 ## Nutzung
 
-**Kopiere den Freigabe-Link einfach in den Beitrag. Inhalt oder Ordnerstruktur werden wenn möglich automatisch dargestellt.**
+**Kopiere den Freigabe-Link einfach in einen Beitrag. Inhalt oder Ordnerstruktur werden wenn möglich automatisch dargestellt.**
 
 ### Shortcode
 
