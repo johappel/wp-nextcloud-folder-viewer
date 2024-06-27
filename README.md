@@ -14,20 +14,19 @@ Hauptfunktionen:
 
 ## Installation
 
-1. Laden Sie das Plugin-Verzeichnis `nextcloud-folder-viewer` in das `/wp-content/plugins/`-Verzeichnis Ihrer WordPress-Installation hoch.
-2. Aktivieren Sie das Plugin über das 'Plugins'-Menü in WordPress.
-3. Stellen Sie sicher, dass Sie über gültige Nextcloud-Freigabe-Links verfügen, die Sie einbetten möchten.
+1. Lade das Plugin-Verzeichnis `nextcloud-folder-viewer` in das `/wp-content/plugins/`-Verzeichnis Ihrer WordPress-Installation hoch.
+2. Aktiviere das Plugin über das 'Plugins'-Menü in WordPress.
 
 Falls du einen Meldung erhältst , dass nicht ale Komponenten installiert sind, dann bitte folgendes 
 auf der Console im Ordner `wp-content/plugins/nextcloud-folder-viewer` ausführen: 'composer install'
-```
 
 ## Nutzung
 
+**Kopiere den Freigabe-Link einfach in den Beitrag. Inhalt oder Ordnerstruktur werden wenn möglich automatisch dargestellt.**
+
 ### Shortcode
 
-Kopiere den Freigabe Link einfach in den Beitrag oder verwende den folgenden Shortcode, um einen Nextcloud-Ordner oder eine Datei in Ihren Beiträgen oder Seiten einzubetten:
-
+Verwende den folgenden Shortcode, um einen Nextcloud-Ordner oder eine Datei in Ihren Beiträgen oder Seiten einzubetten:
 ```
 [nextcloud_folder url="https://ihre-nextcloud-instanz.de/s/IhrFreigabeLink"]
 ```
@@ -51,13 +50,13 @@ Einbetten einer Datei mit benutzerdefiniertem Titel:
 
 ## Hinweise
 
-- Stelle sicher, dass Ihre Nextcloud-Freigabe-Links öffentlich zugänglich sind.
+- Stelle sicher, dass die Nextcloud-Freigabe-Links öffentlich zugänglich sind.
 - Die Darstellung von eingebetteten Dateien hängt vom Dateityp und den Browsereinstellungen der Benutzer ab.
 - Für eine optimale Leistung wird empfohlen, die Anzahl der eingebetteten Dateien und Ordner pro Seite zu begrenzen.
 
 ## Support
 
-Bei Fragen oder Problemen eröffne bitte ein Issue auf der GitHub-Projektseite.
+Bei Fragen oder Problemen eröffne bitte ein Issue auf der GitHub-Projektseite öffenen.
 
 ## Lizenz
 
