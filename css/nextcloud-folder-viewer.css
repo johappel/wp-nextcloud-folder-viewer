@@ -16,8 +16,8 @@
 }
 .nextcloud-folder-icon {
     display: inline-block;
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
     margin-right: 5px;
     background-size: contain;
     background-repeat: no-repeat;
@@ -34,6 +34,8 @@
 
 .nextcloud-folder-content {
     vertical-align: middle;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 80%;
 }
 
 .nextcloud-subfolder-content {
@@ -46,8 +48,8 @@
 
 .nextcloud-folder-handle.open > .folder-icon {
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="None"/><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 12v-3h-4v-4h4V8l5 5-5 5z"/></svg>');
-    height: 20px;
-    width: 20px;
+    height: 24px;
+    width: 24px;
 }
 .nextcloud-folder-item a {
     text-decoration: none;
@@ -61,7 +63,8 @@
 .nextcloud-folder-item.file:hover {
     text-decoration: underline;
     color: darkred;
-    background-color: #f0f0f0;
+    background-color: #ffffff;
+    border-radius: 10px;
 }
 
 .embed-nextcloud-av {

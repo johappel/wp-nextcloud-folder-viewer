@@ -1,8 +1,10 @@
-# Nextcloud Folder Viewer
+# Nextcloud Shares Viewer
 
 ## Beschreibung
 
-Das Nextcloud Folder Viewer Plugin ist eine WordPress-Erweiterung, die es ermöglicht, Ordnerstrukturen und Dateien von Nextcloud-Freigaben direkt in WordPress-Seiten oder -Beiträgen anzuzeigen. Es bietet eine nahtlose Integration von Nextcloud-Inhalten in Ihre WordPress-Website.
+Das Nextcloud Folder Viewer Plugin ist eine WordPress-Erweiterung, 
+die es ermöglicht, Nextcloud-Freigaben direkt in WordPress-Seiten oder -Beiträgen einzubetten. 
+Es bietet eine nahtlose Integration von Nextcloud-Inhalten in Ihre WordPress-Website.
 
 Hauptfunktionen:
 - Anzeige von Nextcloud-Ordnerstrukturen
@@ -13,15 +15,18 @@ Hauptfunktionen:
 ## Installation
 
 1. Laden Sie das Plugin-Verzeichnis `nextcloud-folder-viewer` in das `/wp-content/plugins/`-Verzeichnis Ihrer WordPress-Installation hoch.
-2. Führen sie auf der Console im Ordner `wp-content/plugins/nextcloud-folder-viewer` folgenden Befehl aus: 'composer install'
-3. Aktivieren Sie das Plugin über das 'Plugins'-Menü in WordPress.
-4. Stellen Sie sicher, dass Sie über gültige Nextcloud-Freigabe-Links verfügen, die Sie einbetten möchten.
+2. Aktivieren Sie das Plugin über das 'Plugins'-Menü in WordPress.
+3. Stellen Sie sicher, dass Sie über gültige Nextcloud-Freigabe-Links verfügen, die Sie einbetten möchten.
+
+Falls du einen Meldung erhältst , dass nicht ale Komponenten installiert sind, dann bitte folgendes 
+auf der Console im Ordner `wp-content/plugins/nextcloud-folder-viewer` ausführen: 'composer install'
+```
 
 ## Nutzung
 
 ### Shortcode
 
-Verwenden Sie den folgenden Shortcode, um einen Nextcloud-Ordner oder eine Datei in Ihren Beiträgen oder Seiten einzubetten:
+Kopiere den Freigabe Link einfach in den Beitrag oder verwende den folgenden Shortcode, um einen Nextcloud-Ordner oder eine Datei in Ihren Beiträgen oder Seiten einzubetten:
 
 ```
 [nextcloud_folder url="https://ihre-nextcloud-instanz.de/s/IhrFreigabeLink"]
@@ -46,13 +51,13 @@ Einbetten einer Datei mit benutzerdefiniertem Titel:
 
 ## Hinweise
 
-- Stellen Sie sicher, dass Ihre Nextcloud-Freigabe-Links öffentlich zugänglich sind.
+- Stelle sicher, dass Ihre Nextcloud-Freigabe-Links öffentlich zugänglich sind.
 - Die Darstellung von eingebetteten Dateien hängt vom Dateityp und den Browsereinstellungen der Benutzer ab.
 - Für eine optimale Leistung wird empfohlen, die Anzahl der eingebetteten Dateien und Ordner pro Seite zu begrenzen.
 
 ## Support
 
-Bei Fragen oder Problemen eröffnen Sie bitte ein Issue auf der GitHub-Projektseite oder kontaktieren Sie den Plugin-Autor.
+Bei Fragen oder Problemen eröffne bitte ein Issue auf der GitHub-Projektseite.
 
 ## Lizenz
 

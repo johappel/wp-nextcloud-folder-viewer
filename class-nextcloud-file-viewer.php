@@ -107,7 +107,6 @@ class NextcloudFileViewer
         );
 
         $response = wp_remote_request($this->base_url, $args);
-        error_log('body: ' . json_encode($response));
 
         if (is_wp_error($response)) {
             return false;

@@ -1,10 +1,11 @@
 <?php
 /*
-Plugin Name: Nextcloud Folder Viewer
-Description: Zeigt Freigaben von Nextcloud als Ordnerstruktur an und ermöglicht das Anzeigen von Dateien via Shortcode [nextcloud url="https://example.com/nextcloud/f/123456"] oder das Einbetten von Dateien mit [nextcloud_folder url="https://example.com/nextcloud/s/123456" title="readme.md" show="false"].
-Version: 0.1.1
+Plugin Name: Nextcloud Shares Viewer
+Description: Zeigt Freigaben von Nextcloud als Ordnerstruktur über oEmbed an oder via Shortcode [nextcloud url="https://example.com/nextcloud/f/123456"].
+Version: 1.0.1
 Author: Joachim Happel
 */
+define('WP_HTTP_BLOCK_EXTERNAL', false);
 
 if (!defined('ABSPATH')) exit;
 
@@ -31,6 +32,8 @@ class NextcloudFolderViewer {
         add_action('wp_ajax_view_nextcloud_file', array($this, 'view_nextcloud_file'));
         add_action('wp_ajax_nopriv_view_nextcloud_file', array($this, 'view_nextcloud_file'));
         add_action('init', array($this, 'stream_nextcloud_file'));
+        add_action('init', array($this,'handle_custom_oembed_endpoint'));
+        wp_embed_register_handler('nextcloud', '#https?://[^/]+/s/[a-zA-Z0-9]+#i', array($this, 'nextcloud_embed_handler'));
     }
 
     public function enqueue_scripts() {
@@ -135,13 +138,7 @@ class NextcloudFolderViewer {
         return get_transient('nextcloud_view_' . $token);
     }
 
-    public function get_nextcloud_folder() {
-        $url = $this->decrypt($_POST['url']);
-        $path = isset($_POST['path']) ? $_POST['path'] : '';
-        error_log('get_nextcloud_folder URL: ' . $url. ' Path: ' . $path);
-        if (!$url) {
-            wp_send_json_error('Missing URL');
-        }
+    protected function do_propfind_request($url, $path) {
         $parsed_url = parse_url($url);
         $base_url = $parsed_url['scheme'] . '://' . $parsed_url['host'] . '/public.php/webdav/';
         $share_token = basename($parsed_url['path']);
@@ -160,12 +157,11 @@ class NextcloudFolderViewer {
         $response = wp_remote_request($request_url, $args);
 
         if (is_wp_error($response)) {
-            wp_send_json_error($response->get_error_message());
+            return false;
         } else {
             $response_code = wp_remote_retrieve_response_code($response);
             if ($response_code !== 207) {
-                error_log('Error response: ' . $response_code);
-                wp_send_json_error('Error: ' . $response_code);
+                return false;
             }
             $body = wp_remote_retrieve_body($response);
 
@@ -177,59 +173,93 @@ class NextcloudFolderViewer {
             $xml = simplexml_load_string($body);
 
             if ($xml === false) {
-                wp_send_json_error('Failed to parse XML response');
+                return false;
             } else {
-                $items = array();
-                //Register namespace 'DAV:' for XPath queries and connect with the prefix 'd'
-                $xml->registerXPathNamespace('d', 'DAV:');
-                // "//d:response" means: find all 'response' elements on any depth
-                foreach ($xml->xpath('//d:response') as $item) {
-                    $href = (string)$item->xpath('d:href')[0];
-                    // File Path
-                    $item_path = urldecode(str_replace($base_url, '', $href));
-                    $item_path = str_replace('/public.php/webdav/', '', $item_path);
-                    error_log('Item path: ' . $item_path);
-                    error_log('Current path: ' . $path);
-                    // File Name
-                    $name = basename(rtrim($item_path, '/'));
-                    //folder if d:resourcetype is a d:collection
-                    $is_folder = count($item->xpath('d:propstat/d:prop/d:resourcetype/d:collection')) > 0;
-
-                    if (!$is_folder) {
-                        // If it's a file, generate a view token for it an add it to the items array
-                        $view_token = $this->generate_file_view_token($url, $item_path);
-                        $items[] = array(
-                            'name' => $name,
-                            'isFolder' => $is_folder,
-                            'path' => $item_path,
-                            'viewToken' => $view_token,
-                            'root' => false
-                        );
-                    } else {
-                        $items[] = array(
-                            'name' => $name,
-                            'isFolder' => $is_folder,
-                            'path' => $item_path,
-                            'root' => false
-                        );
-                    }
-
-
-
-                }
-                // If we are at the root, add "Ordnerfreigabe" folder
-                if ($path === '') {
-                    array_unshift($items, array(
-                        'name' => 'Ordnerfreigabe',
-                        'root' => true, // Add a root property to the item to identify it as the root folder
-                        'isFolder' => true,
-                        'path' => '/public.php/webdav/'
-                    ));
-                }
-                error_log('Items: ' . print_r($items, true));
-                wp_send_json_success($items);
-                wp_die();
+                return $xml;
             }
+        }
+    }
+
+    public function check_is_nextcloud_folder($url) {
+
+        $xml = $this->do_propfind_request($url, '');
+        if ($xml === false) {
+            return false;
+        } else {
+            $xml->registerXPathNamespace('d', 'DAV:');
+            $n = 0;
+            foreach ($xml->xpath('//d:response') as $item) {
+                $n ++;
+            }
+            if($n > 1){
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public function get_nextcloud_folder() {
+        $url = $this->decrypt($_POST['url']);
+        if (!$url) {
+            wp_send_json_error('Missing Encrypted URL');
+            $url= $_POST['url'];
+        }
+        $path = isset($_POST['path']) ? $_POST['path'] : '';
+        $parsed_url = parse_url($url);
+        $base_url = $parsed_url['scheme'] . '://' . $parsed_url['host'] . '/public.php/webdav/';
+
+
+        $xml = $this->do_propfind_request($url, $path);
+        if ($xml === false) {
+            wp_send_json_error('Failed to parse XML response');
+        } else {
+            $items = array();
+            //Register namespace 'DAV:' for XPath queries and connect with the prefix 'd'
+            $xml->registerXPathNamespace('d', 'DAV:');
+            // "//d:response" means: find all 'response' elements on any depth
+            foreach ($xml->xpath('//d:response') as $item) {
+                $href = (string)$item->xpath('d:href')[0];
+                // File Path
+                $item_path = urldecode(str_replace($base_url, '', $href));
+                $item_path = str_replace('/public.php/webdav/', '', $item_path);
+                // File Name
+                $name = basename(rtrim($item_path, '/'));
+                //folder if d:resourcetype is a d:collection
+                $is_folder = count($item->xpath('d:propstat/d:prop/d:resourcetype/d:collection')) > 0;
+
+                if (!$is_folder) {
+                    // If it's a file, generate a view token for it an add it to the items array
+                    $view_token = $this->generate_file_view_token($url, $item_path);
+                    $items[] = array(
+                        'name' => $name,
+                        'isFolder' => $is_folder,
+                        'path' => $item_path,
+                        'viewToken' => $view_token,
+                        'root' => false
+                    );
+                } else {
+                    $items[] = array(
+                        'name' => $name,
+                        'isFolder' => $is_folder,
+                        'path' => $item_path,
+                        'root' => false
+                    );
+                }
+
+
+
+            }
+            // If we are at the root, add "Ordnerfreigabe" folder
+            if ($path === '') {
+                array_unshift($items, array(
+                    'name' => 'Ordnerfreigabe',
+                    'root' => true, // Add a root property to the item to identify it as the root folder
+                    'isFolder' => true,
+                    'path' => '/public.php/webdav/'
+                ));
+            }
+            wp_send_json_success($items);
+            wp_die();
         }
     }
 
@@ -295,6 +325,63 @@ class NextcloudFolderViewer {
         }
         return '';
     }
+    public function custom_oembed_handler($provider, $url, $args) {
+
+        if (preg_match('#https?://https?://[^/]+/s/[a-zA-Z0-9]#i', $url)) {
+           # return plugins_url('oembed-endpoint.php', __FILE__);
+        }
+        return $provider;
+    }
+    function handle_custom_oembed_endpoint() {
+        if (isset($_GET['url']) && preg_match('#https?://[^/]+/s/[a-zA-Z0-9]+#i', $_GET['url'])) {
+            $url = $_GET['url'];
+
+            if($this->check_is_nextcloud_folder($url)){
+                $shortcode = '[nextcloud url="' . $url . '"]';
+                $html = '<div style="width: 100%; background-color: #fff; border: 1px solid #ccc;font-size: 20px;padding: 5px;font-family:sans-serif;">'.
+                    '<label for="blocks-shortcode-input" style="padding: 20px; width: 100%, font-size: 24px;">'.
+                    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="28" height="28" aria-hidden="true" focusable="false">'.
+                    '<path d="M16 4.2v1.5h2.5v12.5H16v1.5h4V4.2h-4zM4.2 19.8h4v-1.5H5.8V5.8h2.5V4.2h-4l-.1 15.6zm5.1-3.1l1.4.6 4-10-1.4-.6-4 10z"></path></svg>'.
+                    '<span style="margin-left: 20px">Zeigt Nextcloud Ordner im Frontend an</span>'.
+                    '</label>'.
+                    '<textarea placeholder="Schreibe hier den Shortcode…" rows="1" '.
+                        'style="border-top: 1px solid #ccc;overflow: hidden;font-size: 16px; padding:7px 11px ;overflow: hidden; overflow-wrap: break-word; resize: horizontal; height: 38px; width:94%">'.
+                        $shortcode.
+                    '</textarea></div>';
+            }else{
+                $shortcode = '[nextcloud url="' . $url . '"]';
+                $html = do_shortcode($shortcode);
+
+            }
+
+
+            $provider = parse_url($url, PHP_URL_SCHEME) . '://' . parse_url($url, PHP_URL_HOST);
+            header('Content-Type: application/json');
+            $oembed_data = array(
+                'version' => '1.0',
+                'type' => 'video',
+                'title' => 'Shared Nextcloud Folder',
+                'html' => $html,
+                'width' => 600,
+                'provider_name' => 'Nextcloud',
+                'provider_url' => "$provider",
+                'height' => 400,
+            );
+
+           echo json_encode($oembed_data);
+           exit;
+        }
+    }
+
+    public function nextcloud_embed_handler($matches, $attr, $url, $rawattr) {
+        // Shortcode basierend auf der URL
+        $shortcode = sprintf('[nextcloud url="%s"]', esc_url($url));
+        return do_shortcode($shortcode);
+    }
+
+
+
+
 }
 
 // Initialize the plugin

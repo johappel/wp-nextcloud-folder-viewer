@@ -1,5 +1,5 @@
 jQuery(document).ready(function($) {
-    console.info('READY');
+
     $('.nextcloud-folder-tree').each(function() {
         const container = $(this);
         const url = container.data('url');
